@@ -13,6 +13,13 @@ const xslt = (source: Document, xsl: Document): DocumentFragment => {
   return xsltProcessor.transformToFragment(source, document)
 }
 
+const isSlowNetwork = (): boolean => {
+  // @ts-ignore
+  const connectionInfo = navigator.connection
+  if (!connectionInfo) return false
+  return connectionInfo.effectiveType !== '4g'
+}
+
 export default class WebScreenshot extends HTMLElement {
   constructor() {
     super()
@@ -59,6 +66,10 @@ export default class WebScreenshot extends HTMLElement {
         const xmlRes = await fetch(newVal, { mode: 'cors' })
         const xml = parseXmlText(await xmlRes.text())
         const xsl = parseXmlText(xslText)
+        if (isSlowNetwork()) {
+          // XXX: Experimental
+          xml.querySelector('external-images').remove()
+        }
         const svgDoc = xslt(xml, xsl)
 
         this.removeOlder()

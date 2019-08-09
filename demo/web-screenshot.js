@@ -19,6 +19,13 @@ const xslt = (source, xsl) => {
     xsltProcessor.importStylesheet(xsl);
     return xsltProcessor.transformToFragment(source, document);
 };
+const isSlowNetwork = () => {
+    // @ts-ignore
+    const connectionInfo = navigator.connection;
+    if (!connectionInfo)
+        return false;
+    return connectionInfo.effectiveType !== '4g';
+};
 class WebScreenshot extends HTMLElement {
     constructor() {
         super();
@@ -63,6 +70,10 @@ class WebScreenshot extends HTMLElement {
                     const xmlRes = yield fetch(newVal, { mode: 'cors' });
                     const xml = parseXmlText(yield xmlRes.text());
                     const xsl = parseXmlText(web_screenshot_xsl_1.xslText);
+                    if (isSlowNetwork()) {
+                        // XXX: Experimental
+                        xml.querySelector('external-images').remove();
+                    }
                     const svgDoc = xslt(xml, xsl);
                     this.removeOlder();
                     this.setInitialSize(svgDoc.firstChild);
