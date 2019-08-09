@@ -5,6 +5,9 @@
     <title>web-screenshot</title>
     <script src='./web-screenshot.js'></script>
     <link rel='stylesheet' href='./demo.css' />
+    <script>
+      window.customElements.define(WebScreenshot.is, WebScreenshot)
+    </script>
   </head>
   <body>
     <h1>Demo</h1>
@@ -12,9 +15,11 @@
       https://github.com/daiiz/web-screenshot
     </a>
     <h3>web-screenshot</h3>
-    <a href='https://raw.githubusercontent.com/daiiz/ScreenshotML/master/web-screenshot/pancake.xml' target='_blank'>
-      pancake.xml
-    </a>
+    <p>
+      <a href='https://raw.githubusercontent.com/daiiz/ScreenshotML/master/web-screenshot/pancake.xml' target='_blank'>
+        pancake.xml
+      </a>
+    </p>
     <web-screenshot
       src='https://raw.githubusercontent.com/daiiz/ScreenshotML/master/web-screenshot/pancake.xml'
       max-height="300"></web-screenshot>
