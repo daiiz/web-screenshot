@@ -1,5 +1,10 @@
 # `<web-screenshot>`
 
+## Build
+```
+$ npm run build
+```
+
 ## Demo
 ```
 $ python -m SimpleHTTPServer 8000
