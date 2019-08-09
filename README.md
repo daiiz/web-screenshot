@@ -1,6 +1,6 @@
 # `<web-screenshot>`
 
-## Build
+## Development
 ```
 $ npm run build
 ```
@@ -9,4 +9,5 @@ $ npm run build
 ```
 $ python -m SimpleHTTPServer 8000
 ```
-http://localhost:8000/demo/
+- http://localhost:8000/demo/
+- https://daiiz.github.io/web-screenshot/demo/index.html
