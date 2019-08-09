@@ -46,9 +46,12 @@ export default class WebScreenshot extends HTMLElement {
     switch (attr) {
       case 'src': {
         if (!newVal) break
-        const srcOrigin = getOrigin(newVal)
-        if (!isAllowedOrigin(srcOrigin, this.getAttribute('allow-origin'))) {
-          throw new Error(`Origin ${srcOrigin} is not allowed by attribute "allow-origin"`)
+        const allowOrigin = this.getAttribute('allow-origin')
+        if (allowOrigin) {
+          const srcOrigin = getOrigin(newVal)
+          if (!isAllowedOrigin(srcOrigin, allowOrigin)) {
+            throw new Error(`Origin ${srcOrigin} is not allowed by attribute "allow-origin"`)
+          }
         }
         const xmlRes = await fetch(newVal, { mode: 'cors' })
         const xml = parseXmlText(await xmlRes.text())
