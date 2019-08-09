@@ -1,24 +1,7 @@
 import { xslText } from './web-screenshot-xsl'
+import { parseXmlText, xslt, isSlowNetwork, getOrigin, isAllowedOrigin } from './utils'
 interface Window { WebScreenshot }
 declare var window: Window
-
-const parseXmlText = (xmlText: string): Document => {
-  const parser = new DOMParser()
-  return parser.parseFromString(xmlText, 'application/xml')
-}
-
-const xslt = (source: Document, xsl: Document): DocumentFragment => {
-  const xsltProcessor = new XSLTProcessor()
-  xsltProcessor.importStylesheet(xsl)
-  return xsltProcessor.transformToFragment(source, document)
-}
-
-const isSlowNetwork = (): boolean => {
-  // @ts-ignore
-  const connectionInfo = navigator.connection
-  if (!connectionInfo) return false
-  return connectionInfo.effectiveType !== '4g'
-}
 
 export default class WebScreenshot extends HTMLElement {
   constructor() {
@@ -63,17 +46,24 @@ export default class WebScreenshot extends HTMLElement {
     switch (attr) {
       case 'src': {
         if (!newVal) break
+        const srcOrigin = getOrigin(newVal)
+        if (!isAllowedOrigin(srcOrigin, this.getAttribute('allow-origin'))) {
+          throw new Error(`Origin ${srcOrigin} is not allowed by attribute "allow-origin"`)
+        }
         const xmlRes = await fetch(newVal, { mode: 'cors' })
         const xml = parseXmlText(await xmlRes.text())
         const xsl = parseXmlText(xslText)
+        // XXX: Experimental
         if (isSlowNetwork()) {
-          // XXX: Experimental
           xml.querySelector('external-images').remove()
         }
         const svgDoc = xslt(xml, xsl)
-
+        const svgElem = <SVGElement>svgDoc.firstChild
+        if (svgElem.nodeName.toLowerCase() !== 'svg') {
+          throw new Error('Unknown xml document')
+        }
         this.removeOlder()
-        this.setInitialSize(<SVGElement>svgDoc.firstChild)
+        this.setInitialSize(svgElem)
         this.root.appendChild(svgDoc)
         break
       }
@@ -101,4 +91,3 @@ export default class WebScreenshot extends HTMLElement {
 }
 
 window.WebScreenshot = WebScreenshot
-

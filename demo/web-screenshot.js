@@ -10,22 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const web_screenshot_xsl_1 = require("./web-screenshot-xsl");
-const parseXmlText = (xmlText) => {
-    const parser = new DOMParser();
-    return parser.parseFromString(xmlText, 'application/xml');
-};
-const xslt = (source, xsl) => {
-    const xsltProcessor = new XSLTProcessor();
-    xsltProcessor.importStylesheet(xsl);
-    return xsltProcessor.transformToFragment(source, document);
-};
-const isSlowNetwork = () => {
-    // @ts-ignore
-    const connectionInfo = navigator.connection;
-    if (!connectionInfo)
-        return false;
-    return connectionInfo.effectiveType !== '4g';
-};
+const utils_1 = require("./utils");
 class WebScreenshot extends HTMLElement {
     constructor() {
         super();
@@ -67,16 +52,24 @@ class WebScreenshot extends HTMLElement {
                 case 'src': {
                     if (!newVal)
                         break;
+                    const srcOrigin = utils_1.getOrigin(newVal);
+                    if (!utils_1.isAllowedOrigin(srcOrigin, this.getAttribute('allow-origin'))) {
+                        throw new Error(`Origin ${srcOrigin} is not allowed by attribute "allow-origin"`);
+                    }
                     const xmlRes = yield fetch(newVal, { mode: 'cors' });
-                    const xml = parseXmlText(yield xmlRes.text());
-                    const xsl = parseXmlText(web_screenshot_xsl_1.xslText);
-                    if (isSlowNetwork()) {
-                        // XXX: Experimental
+                    const xml = utils_1.parseXmlText(yield xmlRes.text());
+                    const xsl = utils_1.parseXmlText(web_screenshot_xsl_1.xslText);
+                    // XXX: Experimental
+                    if (utils_1.isSlowNetwork()) {
                         xml.querySelector('external-images').remove();
                     }
-                    const svgDoc = xslt(xml, xsl);
+                    const svgDoc = utils_1.xslt(xml, xsl);
+                    const svgElem = svgDoc.firstChild;
+                    if (svgElem.nodeName.toLowerCase() !== 'svg') {
+                        throw new Error('Unknown xml document');
+                    }
                     this.removeOlder();
-                    this.setInitialSize(svgDoc.firstChild);
+                    this.setInitialSize(svgElem);
                     this.root.appendChild(svgDoc);
                     break;
                 }
@@ -107,7 +100,44 @@ class WebScreenshot extends HTMLElement {
 exports.default = WebScreenshot;
 window.WebScreenshot = WebScreenshot;
 
-},{"./web-screenshot-xsl":2}],2:[function(require,module,exports){
+},{"./utils":2,"./web-screenshot-xsl":3}],2:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseXmlText = (xmlText) => {
+    const parser = new DOMParser();
+    return parser.parseFromString(xmlText, 'application/xml');
+};
+exports.xslt = (source, xsl) => {
+    const xsltProcessor = new XSLTProcessor();
+    xsltProcessor.importStylesheet(xsl);
+    return xsltProcessor.transformToFragment(source, document);
+};
+exports.isSlowNetwork = () => {
+    const connectionInfo = navigator.connection;
+    if (!connectionInfo)
+        return false;
+    if (connectionInfo.effectiveType !== '4g') {
+        console.warn('Network is slow');
+        return true;
+    }
+    return false;
+};
+exports.getOrigin = (url) => {
+    try {
+        return new URL(url).origin;
+    }
+    catch (err) {
+        throw err;
+    }
+};
+exports.isAllowedOrigin = (srcOrigin, allowOrigin) => {
+    if (!allowOrigin || allowOrigin === '*')
+        return true;
+    allowOrigin = allowOrigin.replace(/\/$/, '');
+    return srcOrigin === allowOrigin;
+};
+
+},{}],3:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 /* Run `npm run fetch-xsl` to generate this file */
