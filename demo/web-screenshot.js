@@ -10,6 +10,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const web_screenshot_xsl_1 = require("./web-screenshot-xsl");
+const parseXmlText = (xmlText) => {
+    const parser = new DOMParser();
+    return parser.parseFromString(xmlText, 'application/xml');
+};
+const xslt = (source, xsl) => {
+    const xsltProcessor = new XSLTProcessor();
+    xsltProcessor.importStylesheet(xsl);
+    return xsltProcessor.transformToFragment(source, document);
+};
 class WebScreenshot extends HTMLElement {
     constructor() {
         super();
@@ -29,6 +38,8 @@ class WebScreenshot extends HTMLElement {
         return this._root;
     }
     setInitialSize(svgElem) {
+        svgElem.style.width = 'auto';
+        svgElem.style.height = 'auto';
         for (const attr of WebScreenshot.sizeAttributes) {
             let val = this.getAttribute(attr);
             if (val === null || val.length === 0)
@@ -49,20 +60,12 @@ class WebScreenshot extends HTMLElement {
                 case 'src': {
                     if (!newVal)
                         break;
-                    let parser;
                     const xmlRes = yield fetch(newVal, { mode: 'cors' });
-                    parser = new DOMParser();
-                    const xml = parser.parseFromString(yield xmlRes.text(), 'application/xml');
-                    parser = new DOMParser();
-                    const xsl = parser.parseFromString(web_screenshot_xsl_1.xslText, 'application/xml');
-                    const xsltProcessor = new XSLTProcessor();
-                    xsltProcessor.importStylesheet(xsl);
-                    const svgDoc = xsltProcessor.transformToFragment(xml, document);
+                    const xml = parseXmlText(yield xmlRes.text());
+                    const xsl = parseXmlText(web_screenshot_xsl_1.xslText);
+                    const svgDoc = xslt(xml, xsl);
                     this.removeOlder();
-                    const svgElem = svgDoc.firstChild;
-                    svgElem.style.width = 'auto';
-                    svgElem.style.height = 'auto';
-                    this.setInitialSize(svgElem);
+                    this.setInitialSize(svgDoc.firstChild);
                     this.root.appendChild(svgDoc);
                     break;
                 }
